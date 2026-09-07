@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Smart Mining IoT - Backend</title>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+
+            margin: 0;
+
+            font-family: Arial, sans-serif;
+
+            background: #eef3f5;
+
+            color: #17212b;
+        }
+
+
+        /* =========================================
+           HEADER
+        ========================================= */
+
+        header {
+
+            background: #17212b;
+
+            color: white;
+
+            padding: 25px;
+
+            text-align: center;
+        }
+
+
+        header h1 {
+
+            margin: 0;
+
+            font-size: 30px;
+        }
+
+
+        header p {
+
+            margin-top: 8px;
+
+            color: #b8c4cc;
+        }
+
+
+        /* =========================================
+           MAIN CONTAINER
+        ========================================= */
+
+        .container {
+
+            width: 94%;
+
+            max-width: 1250px;
+
+            margin: 25px auto;
+        }
+
+
+        /* =========================================
+           STATUS BAR
+        ========================================= */
+
+        .status-bar {
+
+            padding: 18px;
+
+            border-radius: 12px;
+
+            text-align: center;
+
+            font-size: 22px;
+
+            font-weight: bold;
+
+            margin-bottom: 22px;
+
+            background: white;
+
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+
+
+        .safe {
+
+            color: #167a45;
+
+            background: #e2f6ea;
+        }
+
+
+        .warning {
+
+            color: #a66b00;
+
+            background: #fff2cf;
+        }
+
+
+        .danger {
+
+            color: #b42318;
+
+            background: #ffe2e2;
+        }
+
+
+        /* =========================================
+           SUMMARY CARDS
+        ========================================= */
+
+        .summary {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, 1fr);
+
+            gap: 15px;
+
+            margin-bottom: 25px;
+        }
+
+
+        .summary-card {
+
+            background: white;
+
+            padding: 20px;
+
+            border-radius: 12px;
+
+            box-shadow:
+                0 3px 10px rgba(0,0,0,0.08);
+
+            text-align: center;
+        }
+
+
+        .summary-card h3 {
+
+            margin: 0 0 10px;
+
+            font-size: 15px;
+
+            color: #66727c;
+        }
+
+
+        .summary-card .number {
+
+            font-size: 28px;
+
+            font-weight: bold;
+        }
+
+
+        /* =========================================
+           CURRENT READING
+        ========================================= */
+
+        .section {
+
+            background: white;
+
+            padding: 22px;
+
+            border-radius: 12px;
+
+            margin-bottom: 25px;
+
+            box-shadow:
+                0 3px 10px rgba(0,0,0,0.08);
+        }
+
+
+        .section-title {
+
+            font-size: 22px;
+
+            font-weight: bold;
+
+            margin-bottom: 18px;
+        }
+
+
+        .current-grid {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(5, 1fr);
+
+            gap: 12px;
+        }
+
+
+        .current-item {
+
+            background: #f5f7f8;
+
+            padding: 15px;
+
+            border-radius: 10px;
+
+            text-align: center;
+        }
+
+
+        .current-item span {
+
+            display: block;
+
+            color: #6d7780;
+
+            font-size: 13px;
+
+            margin-bottom: 8px;
+        }
+
+
+        .current-item strong {
+
+            font-size: 19px;
+        }
+
+
+        /* =========================================
+           HISTORY HEADER
+        ========================================= */
+
+        .history-header {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            margin-bottom: 15px;
+
+            gap: 10px;
+        }
+
+
+        .history-header h2 {
+
+            margin: 0;
+        }
+
+
+        button {
+
+            border: none;
+
+            padding: 10px 17px;
+
+            border-radius: 7px;
+
+            cursor: pointer;
+
+            font-weight: bold;
+        }
+
+
+        .refresh-btn {
+
+            background: #1976d2;
+
+            color: white;
+        }
+
+
+        .clear-btn {
+
+            background: #c62828;
+
+            color: white;
+        }
+
+
+        /* =========================================
+           TABLE
+        ========================================= */
+
+        .table-container {
+
+            overflow-x: auto;
+        }
+
+
+        table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            min-width: 950px;
+        }
+
+
+        th {
+
+            background: #17212b;
+
+            color: white;
+
+            padding: 13px;
+
+            text-align: left;
+
+            font-size: 13px;
+        }
+
+
+        td {
+
+            padding: 12px;
+
+            border-bottom: 1px solid #e2e6e8;
+
+            font-size: 13px;
+        }
+
+
+        tr:hover {
+
+            background: #f5f8fa;
+        }
+
+
+        /* =========================================
+           STATUS BADGES
+        ========================================= */
+
+        .badge {
+
+            display: inline-block;
+
+            padding: 5px 10px;
+
+            border-radius: 20px;
+
+            font-size: 12px;
+
+            font-weight: bold;
+        }
+
+
+        .badge-safe {
+
+            background: #d9f2e3;
+
+            color: #167a45;
+        }
+
+
+        .badge-warning {
+
+            background: #fff0c2;
+
+            color: #916000;
+        }
+
+
+        .badge-danger {
+
+            background: #ffdada;
+
+            color: #b42318;
+        }
+
+
+        /* =========================================
+           ALERT
+        ========================================= */
+
+        .alert-text {
+
+            max-width: 250px;
+        }
+
+
+        /* =========================================
+           FOOTER
+        ========================================= */
+
+        footer {
+
+            text-align: center;
+
+            padding: 25px;
+
+            color: #68737c;
+
+            font-size: 13px;
+        }
+
+
+        /* =========================================
+           RESPONSIVE
+        ========================================= */
+
+        @media(max-width: 900px) {
+
+            .summary {
+
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+
+            .current-grid {
+
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+        }
+
+
+        @media(max-width: 550px) {
+
+            .summary {
+
+                grid-template-columns: 1fr;
+            }
+
+
+            .current-grid {
+
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <h1>⚙️ Smart Mining IoT</h1>
+
+    <p>Backend Monitoring & Sensor History</p>
+
+</header>
+
+
+<div class="container">
+
+
+    <!-- =========================================
+         SYSTEM STATUS
+    ========================================== -->
+
+    <div id="systemStatus"
+         class="status-bar safe">
+
+        🟢 SYSTEM STATUS: SAFE
+
+    </div>
+
+
+    <!-- =========================================
+         SUMMARY
+    ========================================== -->
+
+    <div class="summary">
+
+
+        <div class="summary-card">
+
+            <h3>📊 TOTAL READINGS</h3>
+
+            <div id="totalRecords"
+                 class="number">
+
+                0
+
+            </div>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <h3>🟢 SAFE EVENTS</h3>
+
+            <div id="safeCount"
+                 class="number">
+
+                0
+
+            </div>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <h3>🟡 WARNING EVENTS</h3>
+
+            <div id="warningCount"
+                 class="number">
+
+                0
+
+            </div>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <h3>🔴 DANGER EVENTS</h3>
+
+            <div id="dangerCount"
+                 class="number">
+
+                0
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- =========================================
+         CURRENT SENSOR READING
+    ========================================== -->
+
+    <div class="section">
+
+        <div class="section-title">
+
+            📡 Current Sensor Reading
+
+        </div>
+
+
+        <div class="current-grid">
+
+
+            <div class="current-item">
+
+                <span>Temperature</span>
+
+                <strong id="temperature">
+
+                    -- °C
+
+                </strong>
+
+            </div>
+
+
+            <div class="current-item">
+
+                <span>Gas Level</span>
+
+                <strong id="gas">
+
+                    -- ppm
+
+                </strong>
+
+            </div>
+
+
+            <div class="current-item">
+
+                <span>Oxygen</span>
+
+                <strong id="oxygen">
+
+                    -- %
+
+                </strong>
+
+            </div>
+
+
+            <div class="current-item">
+
+                <span>Latitude</span>
+
+                <strong id="latitude">
+
+                    --
+
+                </strong>
+
+            </div>
+
+
+            <div class="current-item">
+
+                <span>Longitude</span>
+
+                <strong id="longitude">
+
+                    --
+
+                </strong>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         SENSOR HISTORY
+    ========================================== -->
+
+    <div class="section">
+
+
+        <div class="history-header">
+
+            <h2>
+
+                📋 Sensor History / Event Log
+
+            </h2>
+
+
+            <div>
+
+                <button
+                    class="refresh-btn"
+                    onclick="loadHistory()">
+
+                    🔄 Refresh
+
+                </button>
+
+
+                <button
+                    class="clear-btn"
+                    onclick="clearHistory()">
+
+                    🗑️ Clear History
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>ID</th>
+
+                        <th>TIME</th>
+
+                        <th>TEMPERATURE</th>
+
+                        <th>GAS</th>
+
+                        <th>OXYGEN</th>
+
+                        <th>LATITUDE</th>
+
+                        <th>LONGITUDE</th>
+
+                        <th>STATUS</th>
+
+                        <th>ALERT</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="historyTable">
+
+                    <tr>
+
+                        <td colspan="9"
+                            style="text-align:center">
+
+                            Loading history...
+
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    </div>
+
+
+</div>
+
+
+<footer>
+
+    Smart Mining Safety System | IoT Prototype
+
+</footer>
+
+
+
+<script>
+
+
+// =====================================================
+// SOCKET CONNECTION
+// =====================================================
+
+const socket = io();
+
+
+// =====================================================
+// RECEIVE LIVE SENSOR DATA
+// =====================================================
+
+socket.on("sensorData", function(data) {
+
+    updateCurrentData(data);
+
+    loadHistory();
+
+});
+
+
+// =====================================================
+// UPDATE CURRENT DATA
+// =====================================================
+
+function updateCurrentData(data) {
+
+
+    document.getElementById("temperature")
+        .textContent =
+        data.temperature + " °C";
+
+
+    document.getElementById("gas")
+        .textContent =
+        data.gas + " ppm";
+
+
+    document.getElementById("oxygen")
+        .textContent =
+        data.oxygen + " %";
+
+
+    document.getElementById("latitude")
+        .textContent =
+        data.latitude;
+
+
+    document.getElementById("longitude")
+        .textContent =
+        data.longitude;
+
+
+    const statusBox =
+        document.getElementById("systemStatus");
+
+
+    statusBox.className = "status-bar";
+
+
+    if (data.status === "DANGER") {
+
+        statusBox.classList.add("danger");
+
+        statusBox.textContent =
+            "🔴 SYSTEM STATUS: DANGER";
+
+    }
+
+    else if (data.status === "WARNING") {
+
+        statusBox.classList.add("warning");
+
+        statusBox.textContent =
+            "🟡 SYSTEM STATUS: WARNING";
+
+    }
+
+    else {
+
+        statusBox.classList.add("safe");
+
+        statusBox.textContent =
+            "🟢 SYSTEM STATUS: SAFE";
+
+    }
+
+}
+
+
+// =====================================================
+// LOAD HISTORY
+// =====================================================
+
+async function loadHistory() {
+
+
+    try {
+
+        const response =
+            await fetch("/api/history");
+
+
+        const result =
+            await response.json();
+
+
+        const history =
+            result.history;
+
+
+        // Update total
+        document.getElementById("totalRecords")
+            .textContent =
+            history.length;
+
+
+        // Count statuses
+        let safe = 0;
+
+        let warning = 0;
+
+        let danger = 0;
+
+
+        history.forEach(item => {
+
+            if (item.status === "SAFE") {
+
+                safe++;
+
+            }
+
+            else if (item.status === "WARNING") {
+
+                warning++;
+
+            }
+
+            else if (item.status === "DANGER") {
+
+                danger++;
+
+            }
+
+        });
+
+
+        document.getElementById("safeCount")
+            .textContent = safe;
+
+
+        document.getElementById("warningCount")
+            .textContent = warning;
+
+
+        document.getElementById("dangerCount")
+            .textContent = danger;
+
+
+        // Build table
+        const table =
+            document.getElementById("historyTable");
+
+
+        table.innerHTML = "";
+
+
+        if (history.length === 0) {
+
+            table.innerHTML = `
+
+                <tr>
+
+                    <td colspan="9"
+                        style="text-align:center">
+
+                        No sensor history available.
+
+                    </td>
+
+                </tr>
+
+            `;
+
+            return;
+        }
+
+
+        history.forEach(item => {
+
+
+            let badgeClass =
+                "badge-safe";
+
+
+            if (item.status === "WARNING") {
+
+                badgeClass =
+                    "badge-warning";
+
+            }
+
+
+            if (item.status === "DANGER") {
+
+                badgeClass =
+                    "badge-danger";
+
+            }
+
+
+            const row = document.createElement("tr");
+
+
+            row.innerHTML = `
+
+                <td>${item.id}</td>
+
+                <td>${item.timestamp}</td>
+
+                <td>${item.temperature} °C</td>
+
+                <td>${item.gas} ppm</td>
+
+                <td>${item.oxygen} %</td>
+
+                <td>${item.latitude}</td>
+
+                <td>${item.longitude}</td>
+
+                <td>
+
+                    <span class="badge ${badgeClass}">
+
+                        ${item.status}
+
+                    </span>
+
+                </td>
+
+                <td class="alert-text">
+
+                    ${item.alert}
+
+                </td>
+
+            `;
+
+
+            table.appendChild(row);
+
+        });
+
+
+    }
+
+    catch(error) {
+
+        console.error(
+            "History loading error:",
+            error
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// CLEAR HISTORY
+// =====================================================
+
+async function clearHistory() {
+
+
+    const confirmClear =
+        confirm(
+            "Are you sure you want to clear all sensor history?"
+        );
+
+
+    if (!confirmClear) {
+
+        return;
+
+    }
+
+
+    try {
+
+        await fetch(
+            "/api/history",
+            {
+                method: "DELETE"
+            }
+        );
+
+
+        loadHistory();
+
+
+    }
+
+    catch(error) {
+
+        console.error(error);
+
+    }
+
+}
+
+
+// =====================================================
+// INITIAL LOAD
+// =====================================================
+
+loadHistory();
+
+
+// =====================================================
+// AUTO REFRESH
+// =====================================================
+
+setInterval(
+    loadHistory,
+    2000
+);
+
+
+</script>
+
+
+</body>
+
+</html>

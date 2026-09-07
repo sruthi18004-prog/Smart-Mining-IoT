@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Mining Safety System</title>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #eef2f7;
+            color: #172033;
+        }
+
+        header {
+            background: #172033;
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+
+        header h1 { margin: 0 0 8px; }
+        header p { margin: 0; }
+
+        .container {
+            width: 92%;
+            max-width: 1100px;
+            margin: 28px auto;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 22px;
+            box-shadow: 0 4px 16px rgba(0,0,0,.08);
+        }
+
+        .panel h2 { margin-top: 0; }
+
+        .inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 16px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 7px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            margin-top: 18px;
+            padding: 13px 22px;
+            border: 0;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover { opacity: .9; }
+
+        .status {
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 22px;
+        }
+
+        .safe { background: #dcfce7; color: #166534; }
+        .warning { background: #fef3c7; color: #92400e; }
+        .danger { background: #fee2e2; color: #991b1b; }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 18px;
+        }
+
+        .card {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(0,0,0,.07);
+        }
+
+        .card h3 { margin-top: 0; }
+
+        .value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-top: 12px;
+        }
+
+        .gps {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .gps p {
+            background: #f8fafc;
+            padding: 14px;
+            border-radius: 8px;
+        }
+
+        .alert {
+            margin-top: 22px;
+            padding: 18px;
+            border-radius: 10px;
+            background: #f1f5f9;
+            font-size: 17px;
+        }
+
+        .connection {
+            font-weight: bold;
+            color: #15803d;
+        }
+
+        .hint {
+            color: #64748b;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 600px) {
+            .gps { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+<header>
+    <h1>⛏️ Smart Mining Safety System</h1>
+    <p>IoT-Based Mining Safety Prototype</p>
+</header>
+
+<div class="container">
+
+    <div class="panel">
+        <h2>🧪 Enter Sensor Data</h2>
+
+        <div class="inputs">
+            <div>
+                <label for="temperature">Temperature (°C)</label>
+                <input id="temperature" type="number" step="0.1" value="30">
+            </div>
+
+            <div>
+                <label for="gas">Gas Level (ppm)</label>
+                <input id="gas" type="number" step="1" value="500">
+            </div>
+
+            <div>
+                <label for="oxygen">Oxygen (%)</label>
+                <input id="oxygen" type="number" step="0.1" value="20.8">
+            </div>
+
+            <div>
+                <label for="latitude">Latitude</label>
+                <input id="latitude" type="number" step="0.000001" value="17.001234">
+            </div>
+
+            <div>
+                <label for="longitude">Longitude</label>
+                <input id="longitude" type="number" step="0.000001" value="81.778456">
+            </div>
+        </div>
+
+        <button onclick="submitData()">CHECK SAFETY</button>
+
+        <div class="hint">
+            Try Temperature = 48, Gas = 2500, or Oxygen = 18 to demonstrate danger.
+        </div>
+    </div>
+
+    <div id="statusBox" class="status safe">
+        🟢 SYSTEM STATUS: SAFE
+    </div>
+
+    <div class="cards">
+        <div class="card">
+            <h3>🌡️ Temperature</h3>
+            <div class="value"><span id="displayTemperature">--</span> °C</div>
+        </div>
+
+        <div class="card">
+            <h3>💨 Gas Level</h3>
+            <div class="value"><span id="displayGas">--</span> ppm</div>
+        </div>
+
+        <div class="card">
+            <h3>🫁 Oxygen</h3>
+            <div class="value"><span id="displayOxygen">--</span> %</div>
+        </div>
+
+        <div class="card">
+            <h3>📡 IoT Connection</h3>
+            <div class="value connection" id="connection">ONLINE</div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>📍 GPS / Worker Location</h2>
+
+        <div class="gps">
+            <p>Latitude: <strong id="displayLatitude">--</strong></p>
+            <p>Longitude: <strong id="displayLongitude">--</strong></p>
+        </div>
+
+        <p>Last update: <strong id="time">--</strong></p>
+
+        <div class="alert">
+            🚨 <strong>Safety Alert:</strong>
+            <span id="alert">Waiting for data...</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const socket = io();
+
+    socket.on("connect", () => {
+        document.getElementById("connection").innerText = "ONLINE";
+    });
+
+    socket.on("disconnect", () => {
+        document.getElementById("connection").innerText = "OFFLINE";
+    });
+
+    socket.on("sensorData", updateDashboard);
+
+    async function submitData() {
+        const data = {
+            temperature: document.getElementById("temperature").value,
+            gas: document.getElementById("gas").value,
+            oxygen: document.getElementById("oxygen").value,
+            latitude: document.getElementById("latitude").value,
+            longitude: document.getElementById("longitude").value
+        };
+
+        try {
+            const response = await fetch("/api/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                alert(result.message);
+            }
+        } catch (error) {
+            alert("Could not connect to the server.");
+        }
+    }
+
+    function updateDashboard(data) {
+        document.getElementById("displayTemperature").innerText = data.temperature;
+        document.getElementById("displayGas").innerText = data.gas;
+        document.getElementById("displayOxygen").innerText = data.oxygen;
+        document.getElementById("displayLatitude").innerText = data.latitude;
+        document.getElementById("displayLongitude").innerText = data.longitude;
+        document.getElementById("time").innerText = data.timestamp;
+        document.getElementById("alert").innerText = data.alert;
+
+        const box = document.getElementById("statusBox");
+
+        box.className = "status";
+
+        if (data.status === "SAFE") {
+            box.classList.add("safe");
+            box.innerText = "🟢 SYSTEM STATUS: SAFE";
+        } else if (data.status === "WARNING") {
+            box.classList.add("warning");
+            box.innerText = "🟠 SYSTEM STATUS: WARNING";
+        } else {
+            box.classList.add("danger");
+            box.innerText = "🔴 SYSTEM STATUS: DANGER 🚨";
+        }
+    }
+</script>
+</body>
+</html>
